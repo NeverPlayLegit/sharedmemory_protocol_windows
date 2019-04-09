@@ -23,7 +23,7 @@ int main() {
 		memset(buf, 0, 200);
 	}
 
-	getchar();
+	sh_client_close(sh);
 	return 0;
 }
 ```
