@@ -56,6 +56,7 @@ void sh_client_send(sh_client_t* sh, int8_t* buf, uint32_t len) {
 }
 
 void sh_client_close(sh_client_t* sh) {
+	if (!sh) return;
 	sh->_active = 0;
 	if(sh->hThread_recv)WaitForSingleObject(sh->hThread_recv, INFINITE);
 	if(sh->buf_read)UnmapViewOfFile(sh->buf_read);
