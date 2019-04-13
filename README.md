@@ -13,8 +13,8 @@ void callback(sh_client_t* sh, int8_t *buf, uint32_t len) {
 int main() {
 	sh_client_t* sh = sh_client_new((_sh_client_recv_callback)&callback
 		, "Global\\SharedTest1", "Global\\SharedTest2"
-		, "Global\\SharedTest2E", "Global\\SharedTest1E"
-		, "Global\\SharedTest2E_", "Global\\SharedTest1E_"
+		, "Global\\SharedTest1E", "Global\\SharedTest2E"
+		, "Global\\SharedTest1E_", "Global\\SharedTest2E_"
 		, 256);
 	if (sh == 0) printf("Error%d\n", GetLastError());
 
@@ -32,8 +32,12 @@ int main() {
 }
 ```
 
-For the other partner just swap the names: "Global\\SharedTest2" and "Global\\SharedTest1"
+For the other partner just swap the names: "Global\\SharedTest2" and "Global\\SharedTest1" as well as the event names.
 
 ```C
-sh_client_t* sh_other = sh_client_new((_sh_client_recv_callback)&callback, "Global\\SharedTest2", "Global\\SharedTest1", 256);
+sh_client_t* sh_other = sh_client_new((_sh_client_recv_callback)&callback
+	, "Global\\SharedTest2", "Global\\SharedTest1"
+	, "Global\\SharedTest2E", "Global\\SharedTest1E"
+	, "Global\\SharedTest2E_", "Global\\SharedTest1E_"
+	, 256);
 ```
