@@ -15,6 +15,7 @@ int main() {
 		, "Global\\SharedTest1", "Global\\SharedTest2"
 		, "Global\\SharedTest1E", "Global\\SharedTest2E"
 		, "Global\\SharedTest1E_", "Global\\SharedTest2E_"
+		, "SharedTestExit"
 		, 256);
 	if (sh == 0) printf("Error%d\n", GetLastError());
 
@@ -39,5 +40,6 @@ sh_client_t *sh_other = sh_client_new((_sh_client_recv_callback)&callback
 	, "Global\\SharedTest2", "Global\\SharedTest1"
 	, "Global\\SharedTest2E", "Global\\SharedTest1E"
 	, "Global\\SharedTest2E_", "Global\\SharedTest1E_"
+	, "SharedTestExit2"
 	, 256);
 ```
