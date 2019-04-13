@@ -6,19 +6,19 @@ Small protocol for simple sharedmemory communication between two programs under 
 ```C
 #include "sh_client.h"
 
-void callback(sh_client_t* sh, int8_t *buf, uint32_t len) {
+void callback(sh_client_t *sh, int8_t *buf, uint32_t len) {
 	printf("Received: %.*s\n", len, buf);
 }
 
 int main() {
-	sh_client_t* sh = sh_client_new((_sh_client_recv_callback)&callback
+	sh_client_t *sh = sh_client_new((_sh_client_recv_callback)&callback
 		, "Global\\SharedTest1", "Global\\SharedTest2"
 		, "Global\\SharedTest1E", "Global\\SharedTest2E"
 		, "Global\\SharedTest1E_", "Global\\SharedTest2E_"
 		, 256);
 	if (sh == 0) printf("Error%d\n", GetLastError());
 
-	int8_t* buf;
+	int8_t *buf;
 	buf = (int8_t*)malloc(200);
 	memset(buf, 0, 200);
 	while (1) {
@@ -35,7 +35,7 @@ int main() {
 For the other partner just swap the names: "Global\\SharedTest2" and "Global\\SharedTest1" as well as the event names.
 
 ```C
-sh_client_t* sh_other = sh_client_new((_sh_client_recv_callback)&callback
+sh_client_t *sh_other = sh_client_new((_sh_client_recv_callback)&callback
 	, "Global\\SharedTest2", "Global\\SharedTest1"
 	, "Global\\SharedTest2E", "Global\\SharedTest1E"
 	, "Global\\SharedTest2E_", "Global\\SharedTest1E_"
