@@ -13,6 +13,7 @@ struct sh_client_t {
 	HANDLE hThread_recv;
 	HANDLE hEvent_read, hEvent_read2;
 	HANDLE hEvent_write, hEvent_write2;
+	HANDLE hEvent_exit;
 	int8_t* buf_read, * buf_write;
 	size_t buf_len;
 	uint8_t _active;
@@ -22,10 +23,14 @@ struct sh_client_t {
 DWORD WINAPI _sh_client_task_recv(void* data) {
 	sh_client_t* sh = (sh_client_t*)data;
 	while (sh->_active) {
-		WaitForSingleObject(sh->hEvent_read2, INFINITE);
+		HANDLE hs[2];
+		hs[1] = sh->hEvent_read2;
+		hs[0] = sh->hEvent_exit;
+		DWORD ret = WaitForMultipleObjects(2, hs, FALSE, INFINITE);
+		if (ret == WAIT_OBJECT_0) return 0;
 		uint32_t len = sh->buf_read[0] | (uint32_t)sh->buf_read[1] << 8
 			| (uint32_t)sh->buf_read[2] << 16 | (uint32_t)sh->buf_read[3] << 24;
-		int8_t* buf = (int8_t*)malloc(len);
+		int8_t * buf = (int8_t*)malloc(len);
 		memcpy(buf, &sh->buf_read[4], len);
 		sh->func_callback(sh, buf, len);
 		memset(sh->buf_read, 0, sh->buf_len);
@@ -39,9 +44,13 @@ Sends buffer to sharedmemory-connection
 
 Blocks until buffer read (read flag ist set)
 */
-void sh_client_send(sh_client_t* sh, int8_t* buf, uint32_t len) {
+void sh_client_send(sh_client_t * sh, int8_t * buf, uint32_t len) {
 	if (sh->_active && len + 4 < sh->buf_len) {
-		WaitForSingleObject(sh->hEvent_write, INFINITE);
+		HANDLE hs[2];
+		hs[1] = sh->hEvent_write;
+		hs[0] = sh->hEvent_exit;
+		DWORD ret = WaitForMultipleObjects(2, hs, FALSE, INFINITE);
+		if (ret == WAIT_OBJECT_0) return;
 		memcpy(&sh->buf_write[4], buf, len);
 
 		sh->buf_write[3] = (len >> 24) & 0xFF;
@@ -56,6 +65,7 @@ void sh_client_send(sh_client_t* sh, int8_t* buf, uint32_t len) {
 void sh_client_close(sh_client_t * sh) {
 	if (!sh) return;
 	sh->_active = 0;
+	SetEvent(sh->hEvent_exit);
 	if (sh->hThread_recv)WaitForSingleObject(sh->hThread_recv, INFINITE);
 	if (sh->buf_read)UnmapViewOfFile(sh->buf_read);
 	if (sh->buf_write)UnmapViewOfFile(sh->buf_write);
@@ -65,12 +75,14 @@ void sh_client_close(sh_client_t * sh) {
 	if (sh->hEvent_read2)CloseHandle(sh->hEvent_read2);
 	if (sh->hEvent_write)CloseHandle(sh->hEvent_write);
 	if (sh->hEvent_write2)CloseHandle(sh->hEvent_write2);
+	if (sh->hEvent_exit)CloseHandle(sh->hEvent_exit);
 	free(sh);
 }
 
 sh_client_t* sh_client_new(_sh_client_recv_callback callback, const char* shared_name_read, const char* shared_name_write
 	, const char* event_name_read, const char* event_name_write
-	, const char* event_name_read2, const char* event_name_write2, size_t buf_len) {
+	, const char* event_name_read2, const char* event_name_write2
+	, const char* event_name_exit, size_t buf_len) {
 	sh_client_t* res = (sh_client_t*)malloc(sizeof(sh_client_t));
 	res->buf_len = buf_len;
 	res->func_callback = callback;
@@ -119,10 +131,16 @@ sh_client_t* sh_client_new(_sh_client_recv_callback callback, const char* shared
 		goto dispose;
 	}
 
+	res->hEvent_exit = CreateEvent(NULL, FALSE, FALSE, event_name_exit);
+	if (res->hEvent_exit == NULL) {
+		goto dispose;
+	}
+
 	SetEvent(res->hEvent_write);
 	SetEvent(res->hEvent_read);
 	ResetEvent(res->hEvent_write2);
 	ResetEvent(res->hEvent_read2);
+	ResetEvent(res->hEvent_exit);
 	memset(res->buf_read, 0, res->buf_len);
 	memset(res->buf_write, 0, res->buf_len);
 
