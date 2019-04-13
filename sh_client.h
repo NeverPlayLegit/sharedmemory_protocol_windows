@@ -23,10 +23,10 @@ DWORD WINAPI _sh_client_task_recv(void* data) {
 	sh_client_t* sh = (sh_client_t*)data;
 	while (sh->_active) {
 		WaitForSingleObject(sh->hEvent_read2, INFINITE);
-		uint32_t len = sh->buf_read[1] | (uint32_t)sh->buf_read[2] << 8
-			| (uint32_t)sh->buf_read[3] << 16 | (uint32_t)sh->buf_read[4] << 24;
+		uint32_t len = sh->buf_read[0] | (uint32_t)sh->buf_read[1] << 8
+			| (uint32_t)sh->buf_read[2] << 16 | (uint32_t)sh->buf_read[3] << 24;
 		int8_t* buf = (int8_t*)malloc(len);
-		memcpy(buf, &sh->buf_read[5], len);
+		memcpy(buf, &sh->buf_read[4], len);
 		sh->func_callback(sh, buf, len);
 		memset(sh->buf_read, 0, sh->buf_len);
 		SetEvent(sh->hEvent_read);
@@ -40,29 +40,27 @@ Sends buffer to sharedmemory-connection
 Blocks until buffer read (read flag ist set)
 */
 void sh_client_send(sh_client_t* sh, int8_t* buf, uint32_t len) {
-	if (sh->_active && len + 5 < sh->buf_len) {
+	if (sh->_active && len + 4 < sh->buf_len) {
 		WaitForSingleObject(sh->hEvent_write, INFINITE);
-		memcpy(&sh->buf_write[5], buf, len);
+		memcpy(&sh->buf_write[4], buf, len);
 
-		sh->buf_write[4] = (len >> 24) & 0xFF;
-		sh->buf_write[3] = (len >> 16) & 0xFF;
-		sh->buf_write[2] = (len >> 8) & 0xFF;
-		sh->buf_write[1] = len & 0xFF;
-
-		sh->buf_write[0] = 1;
+		sh->buf_write[3] = (len >> 24) & 0xFF;
+		sh->buf_write[2] = (len >> 16) & 0xFF;
+		sh->buf_write[1] = (len >> 8) & 0xFF;
+		sh->buf_write[0] = len & 0xFF;
 
 		SetEvent(sh->hEvent_write2);
 	}
 }
 
-void sh_client_close(sh_client_t* sh) {
+void sh_client_close(sh_client_t * sh) {
 	if (!sh) return;
 	sh->_active = 0;
-	if(sh->hThread_recv)WaitForSingleObject(sh->hThread_recv, INFINITE);
-	if(sh->buf_read)UnmapViewOfFile(sh->buf_read);
+	if (sh->hThread_recv)WaitForSingleObject(sh->hThread_recv, INFINITE);
+	if (sh->buf_read)UnmapViewOfFile(sh->buf_read);
 	if (sh->buf_write)UnmapViewOfFile(sh->buf_write);
-	if(sh->hBuffer_read)CloseHandle(sh->hBuffer_read);
-	if(sh->hBuffer_write)CloseHandle(sh->hBuffer_write);
+	if (sh->hBuffer_read)CloseHandle(sh->hBuffer_read);
+	if (sh->hBuffer_write)CloseHandle(sh->hBuffer_write);
 	if (sh->hEvent_read)CloseHandle(sh->hEvent_read);
 	if (sh->hEvent_read2)CloseHandle(sh->hEvent_read2);
 	if (sh->hEvent_write)CloseHandle(sh->hEvent_write);
@@ -70,7 +68,7 @@ void sh_client_close(sh_client_t* sh) {
 	free(sh);
 }
 
-sh_client_t * sh_client_new(_sh_client_recv_callback callback, const char* shared_name_read, const char* shared_name_write
+sh_client_t* sh_client_new(_sh_client_recv_callback callback, const char* shared_name_read, const char* shared_name_write
 	, const char* event_name_read, const char* event_name_write
 	, const char* event_name_read2, const char* event_name_write2, size_t buf_len) {
 	sh_client_t* res = (sh_client_t*)malloc(sizeof(sh_client_t));
