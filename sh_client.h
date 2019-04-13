@@ -121,17 +121,7 @@ sh_client_t* sh_client_new(_sh_client_recv_callback callback, const char* shared
 	return res;
 
 dispose:
-	CloseHandle(res->hEvent_read);
-	CloseHandle(res->hEvent_read2);
-	CloseHandle(res->hEvent_write);
-	CloseHandle(res->hEvent_write2);
-	UnmapViewOfFile(res->buf_read);
-	UnmapViewOfFile(res->buf_write);
-	CloseHandle(res->hBuffer_read);
-	CloseHandle(res->hBuffer_write);
-
-err:
-	free(res);
+	sh_client_close(res);
 	return 0;
 }
 
@@ -142,5 +132,9 @@ void sh_client_close(sh_client_t *sh) {
 	UnmapViewOfFile(sh->buf_write);
 	CloseHandle(sh->hBuffer_read);
 	CloseHandle(sh->hBuffer_write);
+	CloseHandle(res->hEvent_read);
+	CloseHandle(res->hEvent_read2);
+	CloseHandle(res->hEvent_write);
+	CloseHandle(res->hEvent_write2);
 	free(sh);
 }
