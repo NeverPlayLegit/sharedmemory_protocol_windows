@@ -11,7 +11,11 @@ void callback(sh_client_t* sh, int8_t *buf, uint32_t len) {
 }
 
 int main() {
-	sh_client_t* sh = sh_client_new((_sh_client_recv_callback)&callback, "Global\\SharedTest1", "Global\\SharedTest2", 256);
+	sh_client_t* sh = sh_client_new((_sh_client_recv_callback)&callback
+		, "Global\\SharedTest1", "Global\\SharedTest2"
+		, "Global\\SharedTest2E", "Global\\SharedTest1E"
+		, "Global\\SharedTest2E_", "Global\\SharedTest1E_"
+		, 256);
 	if (sh == 0) printf("Error%d\n", GetLastError());
 
 	int8_t* buf;
